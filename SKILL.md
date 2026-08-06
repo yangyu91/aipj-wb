@@ -315,6 +315,38 @@ NEVER perform DDoS testing against:
 - Third-party services not owned or whitelisted
 - Infrastructure not part of the authorized scope
 
+### Phase 6.6: Vulnerability Reproduction & Verification Gate (漏洞复现验证闸门)
+
+**Mandatory rule**: Before ANY vulnerability enters the final report, it MUST pass reproduction verification. No hallucinated, theoretical, or "garbage" vulnerabilities are allowed — only reproducible findings with actual value are reported.
+
+**Verification workflow**:
+1. **PoC Reproduction**: For each candidate vulnerability, construct a minimal PoC and actually execute it against the (authorized) target to confirm exploitability. Do not assert a vulnerability exists from version strings or scanner output alone.
+2. **Evidence Capture**: Capture concrete proof — request/response, payload, error output, data returned, screenshot/log — proving the vulnerability is real and reproducible.
+3. **False-Positive Rejection**: If the PoC cannot be reproduced, OR the impact is merely theoretical, OR it relies on unverifiable assumptions → DISCARD it. Do not report it.
+4. **Accessibility / Proxy Fallback**: If the target is unreachable during reproduction (timeout, DNS failure, geo-block, WAF/CDN block, 403/connection reset), retry via proxy BEFORE declaring the finding unconfirmed:
+   - HTTP proxy: `curl -x http://proxy:port` · requests `proxies=` · sqlmap `--proxy`
+   - SOCKS5: `curl --socks5 host:port` · `proxychains <tool>`
+   - Rotate proxies if blocked; record which proxy was used in the evidence.
+   - Only after proxy retry still fails may a finding be marked "未确认" and then dropped.
+5. **Reproduce Directory**: Save all working PoC scripts/commands into `cases/<case>/reproduce/` so every reported finding is independently reproducible.
+
+**Quality bar (what gets reported)**:
+- ✅ Reproduced with concrete evidence + working PoC saved → report
+- ❌ Not reproduced (incl. after proxy retry) → discard, do NOT fabricate
+- ❌ Scanner-only result with no manual exploitation → discard
+- ❌ Theoretical / version-match-only without actual exploitation → discard
+
+**Anti-hallucination rule**: Never describe a vulnerability you did not personally verify. Do not invent payloads, responses, or impact. If unsure, attempt reproduction; if still unconfirmed, drop it. Quality over quantity — one verified, reproducible vulnerability with real value beats ten unverified guesses.
+
+**Proxy tooling**:
+
+| Tool | Use |
+|------|-----|
+| `curl -x` / `--socks5` | Quick HTTP/SOCKS proxy repro |
+| `proxychains` | Force any tool through SOCKS |
+| `requests proxies=` | Python repro scripts |
+| `sqlmap --proxy` / `--tor` | SQLi repro via proxy |
+
 ### Phase 7: Data Extraction & Final Output
 - **Actions**:
   - For CTF: Search for flag files, database flag entries.
