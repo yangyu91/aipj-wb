@@ -115,6 +115,33 @@ When a whitelisted target is provided, or when the user requests penetration tes
 
 This defines the decision-driven attack chain for authorized web penetration testing. The chain is dynamic: each step feeds into the next based on observed evidence.
 
+### Phase 0.5: Asset Survey & Attack Surface Mapping (资产测绘与攻击面勘察)
+
+**Goal**: Build a complete, deduplicated inventory of the target's in-scope assets BEFORE any active reconnaissance, and detect edge cases (origin IP exposed, unprotected entry, WAF bypass paths, subdomains via cert/DNS history, FoFa/space mapping). Load and cross-reference `references/asset-mapping.md` for full techniques.
+
+**Actions** (all passive or minimally active; respect authorization scope):
+1. **Seed expansion**: From the whitelisted seed (domain/IP/ASN/org), expand in parallel:
+   - DNS layer: A/AAAA/CNAME/MX/NS/TXT/SOA live enumeration (`dig`, `host`)
+   - **Historical DNS**: SecurityTrails / ViewDNS / VirusTotal / multiple public resolvers to find legacy A records that may be origin IPs
+   - **Certificates & SAN linkage**: crt.sh / certspotter → extract SAN (Subject Alternative Names) → enumerate sibling subdomains, cross-link assets by `O` (organization)
+   - **Subdomain enrichment**: Certificate SAN + FoFA/Quake/Hunter + brute-force (authorized targets only)
+2. **Space mapping (FoFa/Shodan/Censys/Quake/Hunter)**:
+   - Primary: `domain="target.com"` + `cert="<fingerprint or org>"` + `icon_hash="<favicon mmh3>"`
+   - Export host/ip/port/title/server as TSV asset inventory
+3. **Origin exposure / CDN bypass paths**:
+   - Historical A-records pre-CDN-switch date → confirm via `curl -H "Host: <target>" https://<suspected-origin>/`
+   - Certificate SHA-256 fingerprint → Censys/FoFa reverse lookup
+   - SMTP `Received:` headers, multi-region DNS comparison, `admin.`/`origin.`/`api-internal.` style subdomains
+4. **WAF detection & big-body bypass planning**:
+   - Identify WAF via response headers (`cf-ray`, `incap_ses`, `aliyungf_tc`, `SafeLine`, etc.)
+   - Record thresholds and bypass strategy (§6 in asset-mapping.md): `Content-Length > 64KB` padding + real payload at the end; `Transfer-Encoding: chunked` split; parameter flooding
+5. **Link analysis**: `traceroute`/`mtr` + `Via`/`X-Forwarded-For`/`Max-Forwards:1..20` to map reverse-proxy chain and find **unprotected by WAF entrypoints**
+6. **Deduplicate & tag**: Produce `assets.tsv` — (Domain / IP / Port / Service / Tech / WAF / Notes). Mark unprotected entries as high-value targets for Phase 4.
+
+**Decision**: If ≥1 non-WAF-covered entry (direct origin / internal port / naked admin) detected → prioritize in Phase 4 (Targeted Exploitation). Otherwise → proceed to Phase 1 with standard entry. If nothing usable → expand (org-level cert search, favicon cross-domain, sibling-ASN).
+
+**Education SRC (edu.md) note**: Under `教育src白名单`, this phase MUST stay passive OSINT only. No port scan, no subdomain brute force, no big-body probing, no direct HTTP to non-whitelist IPs. Limit to certificate logs, public DNS records, FoFa results for the target itself.
+
 ### Phase 1: Passive Reconnaissance (Sniffing)
 - **Goal**: Collect maximum intelligence without triggering alerts.
 - **Actions**:
@@ -454,6 +481,7 @@ Treat every task as a case. Default phase order:
 - `references/network-reversing.md` (New)
 - `references/ddos-testing.md` (New)
 - `references/edu.md` (教育漏洞报告平台规则,仅由 `教育src白名单 {url}` 指令触发)
+- `references/asset-mapping.md` (资产测绘与攻击面勘察:源站暴露/DNS历史/证书关联/FoFa/大Body绕过/WAF/链路)
 
 ## Scripts
 
