@@ -46,6 +46,15 @@
   .platforms .lbl{color:var(--dim);font-family:var(--mono);font-size:13px;letter-spacing:.5px}
   .platforms .pl{display:inline-flex;align-items:center;gap:6px;color:var(--txt);font-weight:500}
   .platforms .sep{color:var(--dim)}
+  /* install card */
+  .install{display:inline-flex;align-items:center;gap:0;margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;max-width:100%}
+  .install .body{padding:14px 18px;min-width:0}
+  .install .lbl{display:block;color:var(--dim);font-family:var(--mono);font-size:13px;letter-spacing:.5px;margin-bottom:6px}
+  .install .cmd{display:block;font-family:var(--mono);font-size:14px;color:var(--txt);line-height:1.6;word-break:break-all}
+  .install .cmd .url{color:var(--acc)}
+  .install .copy{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;align-self:stretch;border:none;border-left:1px solid var(--line);background:#0c141d;color:var(--mut);font-family:var(--mono);font-size:13px;padding:0 16px;cursor:pointer;transition:background .15s,color .15s}
+  .install .copy:hover{background:#11202c;color:var(--acc)}
+  .install .copy.done{color:var(--acc)}
   /* sections */
   section{padding:72px 0;border-bottom:1px solid var(--line)}
   .sec-head{margin-bottom:40px}
@@ -116,6 +125,13 @@
       <span class="pl">Trae</span>
       <span class="sep">/</span>
       <span class="pl">WorkBuddy</span>
+    </div>
+    <div class="install">
+      <div class="body">
+        <span class="lbl">复制并发送给你的 AI</span>
+        <span class="cmd">安装并部署这个skill：<br><span class="url">https://github.com/yangyu91/aipj-wb</span></span>
+      </div>
+      <button class="copy" onclick="copyInstall(this,'安装并部署这个skill：\nhttps://github.com/yangyu91/aipj-wb')"><span>📋</span><span class="txt">复制</span></button>
     </div>
   </div>
 </header>
@@ -297,5 +313,18 @@
   </div>
 </footer>
 
+<script>
+function copyInstall(btn,text){
+  var done=function(){btn.classList.add('done');btn.querySelector('.txt').textContent='已复制';
+    setTimeout(function(){btn.classList.remove('done');btn.querySelector('.txt').textContent='复制';},1800);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(function(){fallbackCopy(text,done);});
+  }else{fallbackCopy(text,done);}
+}
+function fallbackCopy(text,cb){
+  var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();try{document.execCommand('copy');cb();}catch(e){}document.body.removeChild(ta);
+}
+</script>
 </body>
 </html>
